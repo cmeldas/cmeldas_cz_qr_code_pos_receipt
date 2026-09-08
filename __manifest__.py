@@ -4,12 +4,12 @@
     "category": "Point of Sale",
     "summary": "Print Czech QR codes on POS receipts for QR payment methods",
     "description": "Extends POS receipts to display QR codes for Czech payment methods that generate QR codes.",
-    "version": "18.0.0.0.3",
+    "version": "18.0.0.0.4",
     "website": "https://github.com/cmeldas",
     "author": "cmeldas",
     "depends": [
         "point_of_sale",
-        "origamis_cz_qr_code_pos",
+        "cz_qr_payment",
     ],
     "data": [
         "security/ir.model.access.csv",

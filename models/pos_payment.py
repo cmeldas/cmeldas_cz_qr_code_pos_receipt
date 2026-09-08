@@ -19,6 +19,9 @@ class PosPayment(models.Model):
         payments = super().create(vals_list)
         
         for payment in payments:
+            if payment.qr_code:
+                # QR už poslala pokladna (uložila si ho při zobrazení popupu)
+                continue
             if payment.payment_method_id and payment.payment_method_id.qr_code_method:
                 # Get the order to retrieve necessary information
                 order = payment.pos_order_id

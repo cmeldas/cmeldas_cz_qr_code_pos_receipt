@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
-        <!-- Add QR code at the end of receipt -->
-        <xpath expr="//div[hasclass('before-footer')]" position="after">
-            <t t-foreach="props.data.paymentlines or []" t-as="paymentline" t-key="paymentline_index">
-                <t t-if="paymentline.qr_code">
-                    <div class="pos-receipt-qr-code" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">
-                        <div style="margin-bottom: 5px; font-weight: bold;">
-                            QR kód pro platbu
-                        </div>
-                        <img t-att-src="paymentline.qr_code" 
-                             style="max-width: 200px; width: 100%; height: auto;"
-                             alt="QR Code for Payment"/>
-                    </div>
-                </t>
+        <!-- QR kód platby pod platebními řádky, před patičkou účtenky -->
+        <xpath expr="//div[hasclass('before-footer')]" position="before">
+            <t t-foreach="paymentLines" t-as="line" t-key="line_index">
+                <div t-if="line.qr_code" class="pos-receipt-qr-code text-center pt-3">
+                    <div class="fw-bolder">QR kód pro platbu</div>
+                    <img t-att-src="line.qr_code"
+                         style="max-width: 200px; width: 100%; height: auto;"
+                         alt="QR kód pro platbu"/>
+                </div>
             </t>
         </xpath>
     </t>

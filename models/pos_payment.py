@@ -27,9 +27,14 @@ class PosPayment(models.Model):
                 order = payment.pos_order_id
                 if order:
                     try:
+                        # stejná zpráva jako v pokladně: "Order <pos_reference> <tracking_number>"
+                        if order.pos_reference:
+                            free_communication = f"Order {order.pos_reference} {order.tracking_number or ''}".strip()
+                        else:
+                            free_communication = order.name or ""
                         qr_code_data = payment.payment_method_id.get_qr_code(
                             amount=payment.amount,
-                            free_communication=order.name or "",
+                            free_communication=free_communication,
                             structured_communication="",
                             currency=order.currency_id.id,
                             debtor_partner=order.partner_id.id if order.partner_id else False,

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Od Odoo 20 je účtenka pokladny jedna šablona QWeb (ir.ui.view), kterou vykresluje
+        server (wkhtmltoimage) i prohlížeč (registerPythonTemplate). Data jsou slovníky:
+        payments = pos.payment se všemi poli, mezi nimi qr_code (obrázek jako data URI).
+        Výrazy proto jen přes payment.get(...) / payment['...'], bez t-field a t-options.
+    -->
+    <template id="pos_order_receipt" inherit_id="point_of_sale.pos_order_receipt">
+        <!-- QR kód platby pod platbami, před patičkou účtenky (stejné místo jako v 19) -->
+        <xpath expr="//div[@name='before-footer']" position="before">
+            <t t-foreach="payments" t-as="payment">
+                <div t-if="payment.get('qr_code')" class="pos-receipt-qr-code w-100 text-center pt-3">
+                    <div class="text-bold">QR kód pro platbu</div>
+                    <img t-att-src="payment['qr_code']" class="w-75"
+                         style="height: auto; image-rendering: pixelated;"
+                         alt="QR kód pro platbu"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>

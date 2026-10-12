@@ -1,0 +1,3 @@
+id,name,model_id,group_id/id,operation,domain
+access_pos_payment_user,pos.payment.user,pos.payment,point_of_sale.group_pos_user,cru,
+access_pos_payment_manager,pos.payment.manager,pos.payment,point_of_sale.group_pos_manager,crud,

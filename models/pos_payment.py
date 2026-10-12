@@ -1,56 +1,56 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api
 import logging
 
+from odoo import api, models
+
 _logger = logging.getLogger(__name__)
+
+
+def qr_payment_message(order):
+    """Zpráva pro příjemce jako v pokladně: ``Order <pos_reference> <tracking_number>``."""
+    if order.pos_reference:
+        return f"Order {order.pos_reference} {order.tracking_number or ''}".strip()
+    return order.name or ""
 
 
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
-    qr_code = fields.Char(
-        string="QR Code Data",
-        help="Base64 encoded QR code for this payment",
-    )
+    # Pole ``qr_code`` (obrázek QR jako data URI) má od Odoo 20 přímo point_of_sale ve stejném
+    # sloupci, jaký dřív zakládal tento modul. Jádro ho ale po zavření popupu maže; pokladna
+    # s tímto modulem ho nechává vyplněné, aby se QR vytiskl na účtenku (viz order_model_ext.js).
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Generate QR code when payment is created if payment method supports it."""
+        """Doplní QR kód platbám QR metodou, které ho z pokladny nedostaly."""
         payments = super().create(vals_list)
-        
+
         for payment in payments:
             if payment.qr_code:
                 # QR už poslala pokladna (uložila si ho při zobrazení popupu)
                 continue
-            if payment.payment_method_id and payment.payment_method_id.qr_code_method:
-                # Get the order to retrieve necessary information
-                order = payment.pos_order_id
-                if order:
-                    try:
-                        # stejná zpráva jako v pokladně: "Order <pos_reference> <tracking_number>"
-                        if order.pos_reference:
-                            free_communication = f"Order {order.pos_reference} {order.tracking_number or ''}".strip()
-                        else:
-                            free_communication = order.name or ""
-                        qr_code_data = payment.payment_method_id.get_qr_code(
-                            amount=payment.amount,
-                            free_communication=free_communication,
-                            structured_communication="",
-                            currency=order.currency_id.id,
-                            debtor_partner=order.partner_id.id if order.partner_id else False,
-                        )
-                        if qr_code_data:
-                            payment.qr_code = qr_code_data
-                    except Exception as e:
-                        # Log error but don't block payment creation
-                        payment.env['ir.logging'].sudo().create({
-                            'name': 'pos.payment',
-                            'type': 'server',
-                            'level': 'warning',
-                            'message': f'Failed to generate QR code for payment {payment.id}: {str(e)}',
-                            'path': 'pos_payment',
-                            'func': 'create',
-                            'line': '0',
-                        })
-        
+            method = payment.payment_method_id
+            order = payment.pos_order_id
+            if not order or method.payment_method_type != "bank_qr_code" or not method.qr_code_method:
+                continue
+            try:
+                payment.qr_code = method.get_qr_code_image(
+                    payment.amount,
+                    qr_payment_message(order),
+                    "",
+                    order.currency_id.id,
+                    order.partner_id.id,
+                )
+            except Exception as error:  # noqa: BLE001 – QR nesmí zablokovat uložení platby
+                _logger.warning("Failed to generate QR code for payment %s: %s", payment.id, error)
+                payment.env["ir.logging"].sudo().create({
+                    "name": "pos.payment",
+                    "type": "server",
+                    "level": "warning",
+                    "message": f"Failed to generate QR code for payment {payment.id}: {error}",
+                    "path": "pos_payment",
+                    "func": "create",
+                    "line": "0",
+                })
+
         return payments
